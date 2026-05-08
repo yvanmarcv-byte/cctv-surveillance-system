@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Monitoring</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="dashboard-container">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+        <h2>CCTV System</h2>
+
+        <p>Welcome, {{ user }}</p>
+
+        <a href="/">Dashboard</a>
+
+        <a href="/camera_monitoring">Camera Monitoring</a>
+
+        <a href="/login_logs">User Logs</a>
+
+        <a href="/device_management">Device Management</a>
+
+        <a href="/logout">Log Out</a>
+
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+        <h1>Camera Monitoring</h1>
+
+        <div class="video-card">
+
+            <h2>Live Camera Feed</h2>
+
+            <!-- BUTTON INSIDE PAGE -->
+            <a href="/toggle_blur">
+
+                <button>
+                    Blur Background
+                </button>
+
+            </a>
+
+            <br><br>
+
+            <!-- CAMERA FEED -->
+            <img src="/video" width="850">
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

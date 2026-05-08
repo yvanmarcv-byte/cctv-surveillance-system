@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Device Management</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="dashboard-container">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+        <h2>CCTV System</h2>
+
+        <p>Welcome, {{ user }}</p>
+
+        <a href="/">Dashboard</a>
+
+        <a href="/camera_monitoring">Camera Monitoring</a>
+
+        <a href="/login_logs">Login Logs</a>
+
+        <a href="/device_management">Device Management</a>
+
+        <a href="/logout">Log Out</a>
+
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+        <h1>Device Management</h1>
+
+        <div class="logs-card">
+
+            <table>
+
+                <tr>
+                    <th>Device Name</th>
+                    <th>IP Address</th>
+                    <th>Status</th>
+                </tr>
+
+                {% for device in devices %}
+                <tr>
+
+                    <td>{{ device.name }}</td>
+
+                    <td>{{ device.ip }}</td>
+
+                    <td>{{ device.status }}</td>
+
+                </tr>
+                {% endfor %}
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
