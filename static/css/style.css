@@ -1,5 +1,5 @@
 /* =========================================
-   1. General Reset & Typography
+   1. GLOBAL STYLES & RESET
    ========================================= */
 * {
     box-sizing: border-box;
@@ -16,7 +16,7 @@ body {
 }
 
 /* =========================================
-   2. Auth Pages (Login/Register)
+   2. AUTH PAGES (Login & Register)
    ========================================= */
 .container {
     display: flex;
@@ -79,7 +79,6 @@ body {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    font-size: 1rem;
     transition: background 0.3s ease;
 }
 
@@ -87,24 +86,8 @@ body {
     background-color: #1d4ed8;
 }
 
-.card p {
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-    color: #94a3b8;
-}
-
-.card a {
-    color: #3b82f6;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.card a:hover {
-    text-decoration: underline;
-}
-
 /* =========================================
-   3. Dashboard Layout
+   3. DASHBOARD MAIN LAYOUT
    ========================================= */
 .dashboard-container {
     display: flex;
@@ -119,6 +102,10 @@ body {
     position: sticky;
     top: 0;
     height: 100vh;
+
+    /* ADD THESE THREE LINES */
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar h2 {
@@ -151,7 +138,7 @@ body {
 .main-content {
     flex: 1;
     padding: 2.5rem;
-    background-color: rgba(15, 23, 42, 0.5);
+    background-color: rgba(15, 23, 42, 0.3);
 }
 
 .main-content h1 {
@@ -161,7 +148,7 @@ body {
 }
 
 /* =========================================
-   4. Dashboard Cards & Content
+   4. CONTENT CARDS (Video & Logs)
    ========================================= */
 .video-card, .logs-card {
     background-color: #1f2937;
@@ -182,21 +169,37 @@ body {
 
 .video-wrapper {
     width: 100%;
-    display: flex;
-    justify-content: center;
+    max-width: 900px;
+    margin: 0 auto;
     background-color: #000;
     border-radius: 8px;
     overflow: hidden;
+    border: 2px solid #374151;
 }
 
 .video-wrapper img {
-    max-width: 100%;
+    width: 100%;
     height: auto;
     display: block;
 }
 
+.btn-action {
+    padding: 8px 16px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-action:hover {
+    background-color: #2563eb;
+}
+
 /* =========================================
-   5. Tables & Status Badges
+   5. TABLES & STATUS BADGES
    ========================================= */
 table {
     width: 100%;
@@ -224,29 +227,36 @@ table tr:hover {
     background-color: #262f3f;
 }
 
-/* Status Badge Styles */
 .status-badge {
     padding: 4px 10px;
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
+    display: inline-block;
 }
 
-/* These match the dynamic classes in your HTML logs */
-.status-badge.offline {
-    background-color: #451a1a;
-    color: #f87171;
-    border: 1px solid #991b1b;
-}
-
-.status-badge.online {
+.status-badge.online,
+.status-badge.active,
+.status-badge.connected {
     background-color: #064e3b;
     color: #34d399;
     border: 1px solid #065f46;
 }
 
-/* Shared Error text */
+.status-badge.offline,
+.status-badge.disconnected {
+    background-color: #451a1a;
+    color: #f87171;
+    border: 1px solid #991b1b;
+}
+
+.status-badge.login {
+    background-color: #1e3a8a;
+    color: #bfdbfe;
+    border: 1px solid #3b82f6;
+}
+
 .error {
     color: #f87171;
     background-color: rgba(248, 113, 113, 0.1);

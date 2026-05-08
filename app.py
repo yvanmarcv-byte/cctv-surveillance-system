@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, session, Response
 import psycopg2
 import cv2
 import numpy as np
+from flask import jsonify
+import time
 
 app = Flask(__name__)
 app.secret_key = "secretkey123"
@@ -35,82 +37,44 @@ if not camera.isOpened():
 # VIDEO STREAM FUNCTION
 # =========================
 def generate_frames():
-
     global blur_background
+    prev_time = 0
 
     while True:
-
         success, frame = camera.read()
-
         if not success:
             break
 
-        # Create blurred version
-        blurred_frame = cv2.GaussianBlur(
-            frame,
-            (55, 55),
-            0
-        )
+        output_frame = frame.copy()
 
-        # Convert to grayscale
-        gray = cv2.cvtColor(
-            frame,
-            cv2.COLOR_BGR2GRAY
-        )
+        # --- CALCULATE REAL FPS ---
+        current_time = time.time()
+        # Calculate the difference in time
+        fps_real = 1 / (current_time - prev_time)
+        prev_time = current_time
 
-        # Detect faces
-        faces = face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30)
-        )
+        # --- FACE DETECTION & BLUR LOGIC ONLY ---
+        gray = cv2.cvtColor(output_frame, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(30, 30))
 
-        # Apply blur mode
         if blur_background:
-
-            # Start with blurred frame
-            output_frame = blurred_frame.copy()
-
-            # Restore original face area
+            blurred_frame = cv2.GaussianBlur(output_frame, (55, 55), 0)
+            temp_frame = blurred_frame.copy()
             for (x, y, w, h) in faces:
-
-                output_frame[y:y+h, x:x+w] = frame[y:y+h, x:x+w]
-
-                cv2.rectangle(
-                    output_frame,
-                    (x, y),
-                    (x+w, y+h),
-                    (0, 255, 0),
-                    2
-                )
-
+                temp_frame[y:y + h, x:x + w] = output_frame[y:y + h, x:x + w]
+                cv2.rectangle(temp_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            output_frame = temp_frame
         else:
-
-            output_frame = frame.copy()
-
             for (x, y, w, h) in faces:
+                cv2.rectangle(output_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-                cv2.rectangle(
-                    output_frame,
-                    (x, y),
-                    (x+w, y+h),
-                    (0, 255, 0),
-                    2
-                )
-
-        # Convert frame to JPEG
+        # --- ENCODE AND YIELD (No Timestamp) ---
         ret, buffer = cv2.imencode('.jpg', output_frame)
+        if not ret:
+            continue
 
-        frame = buffer.tobytes()
-
-        yield (
-            b'--frame\r\n'
-            b'Content-Type: image/jpeg\r\n\r\n' +
-            frame +
-            b'\r\n'
-        )
-
+        frame_bytes = buffer.tobytes()
+        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 # =========================
 # LOGIN ROUTE
 # =========================
@@ -194,24 +158,33 @@ def register():
 # =========================
 # DASHBOARD
 # =========================
+from datetime import datetime
+
 @app.route('/')
 def dashboard():
-
     # Protect dashboard
     if 'user' not in session:
         return redirect('/login')
 
     try:
-        cursor.execute(
-            "SELECT * FROM camera_logs ORDER BY id DESC"
-        )
+        cursor.execute("SELECT * FROM camera_logs ORDER BY id DESC")
+        raw_logs = cursor.fetchall()
 
-        logs = cursor.fetchall()
+        # Ensure timestamps are datetime objects for Jinja2
+        logs = []
+        for row in raw_logs:
+            temp_list = list(row)
+            # If the timestamp (index 3) is a string, convert it
+            if len(temp_list) > 3 and isinstance(temp_list[3], str):
+                try:
+                    # Adjust format if your DB uses a different string format
+                    temp_list[3] = datetime.strptime(temp_list[3], '%Y-%m-%d %H:%M:%S.%f')
+                except ValueError:
+                    temp_list[3] = datetime.strptime(temp_list[3], '%Y-%m-%d %H:%M:%S')
+            logs.append(temp_list)
 
-    except psycopg2.Error as e:
-
+    except Exception as e:
         print("Database error:", e)
-
         logs = []
 
     return render_template(
@@ -219,7 +192,6 @@ def dashboard():
         logs=logs,
         user=session['user']
     )
-
 
 # =========================
 # VIDEO STREAM ROUTE
@@ -246,21 +218,38 @@ def logout():
 
     return redirect('/login')
 
+camera = cv2.VideoCapture(0)
+# Cache these values so we don't ask the hardware every second
+CAM_RES = f"{int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))}"
+CAM_FPS = int(camera.get(cv2.CAP_PROP_FPS))
+if CAM_FPS <= 0: CAM_FPS = 30 # Standard fallback
+
 # =========================
 # CAMERA MONITORING ROUTE
 # =========================
 @app.route('/camera_monitoring')
 def camera_monitoring():
-
-    # Protect page
     if 'user' not in session:
         return redirect('/login')
 
+    # Get actual resolution from the camera object
+    width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    res_string = f"{width}x{height}"
+
+
+    # Get the codec/format (usually MJPEG for webcams)
+    # This is a bit advanced, so we can also check if the camera is opened
+    stream_type = "MJPEG (Live)" if camera.isOpened() else "Disconnected"
+
     return render_template(
         'camera_monitoring.html',
-        user=session['user']
+        user=session['user'],
+        blur_background=blur_background,
+        resolution=CAM_RES,
+        stream_type="MJPEG (Live)",
+        fps=CAM_FPS  # <-- This name MUST match the HTML
     )
-
 
 # =========================
 # DEVICE MANAGEMENT ROUTE
@@ -333,14 +322,14 @@ def login_logs():
 # =========================
 # TOGGLE BLUR BACKGROUND
 # =========================
+
+
 @app.route('/toggle_blur')
 def toggle_blur():
-
     global blur_background
-
     blur_background = not blur_background
-
-    return redirect('/camera_monitoring')
+    # Return a JSON response instead of a redirect
+    return jsonify({"status": "success", "blur_active": blur_background})
 
 # =========================
 # RUN APP
